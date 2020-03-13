@@ -148,6 +148,11 @@ export class VerifierService {
       console.log('البحر الخفيف')
     }
 
+    //قد يختلط الهزج بمجزوء الوافر
+    if(this.الهزج(sadr_in_bits, ajz_in_bits)) {//12
+      console.log('بحر الهزج');
+    }
+
   }
 
   //TODO: حذف واو عمرو وألف الجماعة
@@ -723,6 +728,22 @@ export class VerifierService {
       console.log('مجزوء');
       return true;
     }  
+
+    return false;
+  }
+
+  الهزج(صدر, عجز) {
+    //مفاعيلن > مفاعلن وهو نادر وقبيح
+    //
+    var sadr_majzoo_reg : RegExp = new RegExp('^('+ this.مفاعيلن + '|' + this.مفاعلن + '|' + this.مفاعيل + ')'+
+                                              '('+ this.مفاعيلن + '|' + this.مفاعلن + '|' + this.مفاعيل + ')$');
+    var ajz_majzoo_reg : RegExp = new RegExp('^('+ this.مفاعيلن + '|' + this.مفاعلن + '|' + this.مفاعيل + ')'+
+                                              '('+ this.مفاعيلن + '|' + this.فعولن + ')$');
+
+    if(sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+      console.log('مجزوء');
+      return true;
+    }
 
     return false;
   }
