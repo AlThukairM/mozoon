@@ -1,0 +1,6 @@
+<div class="container">
+<mat-form-field dir="rtl" class="input">
+    <textarea matInput #poem poem.value=''></textarea>
+</mat-form-field>
+<button mat-raised-button color="primary" (click)="submit(poem.value)">تحقّق</button>
+</div>
