@@ -1,3 +1,5 @@
+
+
 .container {
     display: flex;
     flex-direction: column;
@@ -5,6 +7,29 @@
 }
 
 .input {
+    text-align: center;
+    width: 90%;
+    font-size: 16px;
+}
+
+.button {
+    font-size: 16px;
+}
+
+.instructions {
     text-align: right;
-    width: 66%;
+    font-size: 16px;
+}
+
+@media (min-width:700px){
+    .input {
+        text-align: center;
+        width: 66%;
+        font-size: 32px;
+    }
+
+    .button {
+        padding: 12px 24px;
+        font-size: 24px;
+    }
 }

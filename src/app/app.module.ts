@@ -5,12 +5,14 @@ import { AppComponent } from './app.component';
 import { EditorComponent } from './editor/editor.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button'
+import { MatButtonModule } from '@angular/material/button';
+import { FeedbackComponent } from './feedback/feedback.component'
 
 @NgModule({
   declarations: [
     AppComponent,
-    EditorComponent
+    EditorComponent,
+    FeedbackComponent
   ],
   imports: [
     BrowserModule,

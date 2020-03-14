@@ -1,24 +1,27 @@
-import { Injectable } from '@angular/core';
+import { Injectable, EventEmitter } from '@angular/core';
+import { Feedback } from './feedback/feedback';
 
 @Injectable({
   providedIn: 'root'
 })
 export class VerifierService {
 
+  private static NOT_MOZOON = 'البيت الذي أدخلته غير موزون';
+
   hidden_aleph = new Map();
-  الحروف_الشمسية = ['ت','ث','د','ذ','ر','ز','س','ش','ص','ض','ط','ظ','ن'];
-  الحروف_القمرية = ['أ','إ','ب','ج','ح','خ','ع','غ','ف','ق','ك','م','ه','و','ل', 'ي'];
+  الحروف_الشمسية = ['ت', 'ث', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ن'];
+  الحروف_القمرية = ['أ', 'إ', 'ب', 'ج', 'ح', 'خ', 'ع', 'غ', 'ف', 'ق', 'ك', 'م', 'ه', 'و', 'ل', 'ي'];
   shaddah = 'ّ';
-  sokoon : string = 'ْ';
+  sokoon: string = 'ْ';
   تنوين_فتح = 'ً';
   تنوين_كسر = 'ٍ';
   تنوين_ضم = 'ٌ';
-  نون_ساكنة =  'نْ';
+  نون_ساكنة = 'نْ';
   فتحة = 'َ';
   ضمة = 'ُ';
   كسرة = 'ِ';
   مد = 'آ';
-  tanween = ['ً','ٍ','ٌ'];
+  tanween = ['ً', 'ٍ', 'ٌ'];
   فعولن = '11010';
   فاعلن = '10110';
   مفاعيلن = '1101010';
@@ -54,9 +57,12 @@ export class VerifierService {
   مفعولان = '1010100';
   فعولان = '110100';
   فاعلاتان = '10110100';
+  مفعول = '10101';
 
+  receivedFilter: EventEmitter<Feedback>;
 
-  constructor() { 
+  constructor() {
+    this.receivedFilter = new EventEmitter<Feedback>();
     this.hidden_aleph.set("هذا", "هَاذَا");
     this.hidden_aleph.set("هذه", "هَاذِهِ");
     this.hidden_aleph.set("هذان", "هَاذَانِ");
@@ -70,6 +76,7 @@ export class VerifierService {
     this.hidden_aleph.set("طه", "طَاهَ");
   }
 
+
   //assumptions:
   //  -poem is a one-liner
   //  -أسماء الإشارة غير مشكلة
@@ -77,13 +84,12 @@ export class VerifierService {
   //  - حروف العطف تُفصل بمسافة عن بداية الكلمة
   //  - الشدة لايوضع معها تشكيل آخر
   //  - تنوين الفتح على الحرف قبل الألف
-  //  - ألف التنوين لاتشكل
   //  - ألف المد لاتشكل
-  //  - لاتشكيل يعني سكون
   //  - ضمير الغائب مشبع
-  //
   //TODO: support full poems
   verify(poem: string) {
+
+    var retval: Feedback  = new Feedback();
     //كتابة عروضية
 
     //TODO remove extraneous spaces
@@ -91,67 +97,109 @@ export class VerifierService {
     var صدر = this.arood_writing(أشطر[0].trim());
     //if(!أشطر[1]) {return; }//TODO دعم البيت المشطور
     var عجز;
-    if(أشطر[1]) {
+    if (أشطر[1]) {
       عجز = this.arood_writing(أشطر[1].trim());
     }
 
     var sadr_in_bits = this.convert_to_bits(صدر);
+    retval.تقطيع = sadr_in_bits;
 
     var ajz_in_bits;
-    if(عجز) {
+    if (عجز) {
       ajz_in_bits = this.convert_to_bits(عجز);
+      retval.تقطيع += ' *** ' + ajz_in_bits;
     }
-    
-    
+
+    retval.تقطيع.split("").reverse().join("");
+    retval.موزون = true;
     //compare with بحور
-    if(this.الطويل(sadr_in_bits, ajz_in_bits)) {//1
+    if (this.الطويل(sadr_in_bits, ajz_in_bits)) {//1
       console.log('البحر الطويل');
+      retval.بحر = 'البحر الطويل';
     }
 
-    if(this.المتقارب(sadr_in_bits, ajz_in_bits)) {//2
+    if (this.المتقارب(sadr_in_bits, ajz_in_bits)) {//2
       console.log('البحر المتقارب');
+      retval.بحر = 'البحر المتقارب';
     }
 
-    if(this.البسيط(sadr_in_bits, ajz_in_bits)) {//3
+    if (this.البسيط(sadr_in_bits, ajz_in_bits)) {//3
       console.log('البحر البسيط');
+      retval.بحر = 'البحر البسيط';
     }
 
-    if(this.الرجز(sadr_in_bits, ajz_in_bits)) {//4
+    if (this.الرجز(sadr_in_bits, ajz_in_bits)) {//4
       console.log('بحر الرجز');
+      retval.بحر = 'بحر الرجز';
     }
 
-    if(this.السريع(sadr_in_bits, ajz_in_bits)) {//5
+    if (this.السريع(sadr_in_bits, ajz_in_bits)) {//5
       console.log('البحر السريع');
+      retval.بحر = 'البحر السريع';
     }
 
-    if(this.المنسرح(sadr_in_bits, ajz_in_bits)) {//6
+    if (this.المنسرح(sadr_in_bits, ajz_in_bits)) {//6
       console.log('البحر المنسرح');
+      retval.بحر = 'البحر المنسرح';
     }
 
-    if(this.الكامل(sadr_in_bits, ajz_in_bits)) {//7
+    if (this.الكامل(sadr_in_bits, ajz_in_bits)) {//7
       console.log('البحر الكامل');
+      retval.بحر = 'البحر الكامل';
     }
 
-    if(this.الوافر(sadr_in_bits, ajz_in_bits)) {//8
+    if (this.الوافر(sadr_in_bits, ajz_in_bits)) {//8
       console.log('البحر الوافر');
+      retval.بحر = 'البحر الوافر';
     }
 
-    if(this.المديد(sadr_in_bits, ajz_in_bits)) {//9
-      console.log('البحر المديد')
+    if (this.المديد(sadr_in_bits, ajz_in_bits)) {//9
+      console.log('البحر المديد');
+      retval.بحر = 'البحر المديد';
     }
 
-    if(this.الرمل(sadr_in_bits, ajz_in_bits)) {//10
+    if (this.الرمل(sadr_in_bits, ajz_in_bits)) {//10
       console.log('بحر الرمل');
+      retval.بحر = 'بحر الرمل';
     }
 
-    if(this.الخفيف(sadr_in_bits, ajz_in_bits)) {//11
-      console.log('البحر الخفيف')
+    if (this.الخفيف(sadr_in_bits, ajz_in_bits)) {//11
+      console.log('البحر الخفيف');
+      retval.بحر = 'البحر الخفيف';
     }
 
     //قد يختلط الهزج بمجزوء الوافر
-    if(this.الهزج(sadr_in_bits, ajz_in_bits)) {//12
+    if (this.الهزج(sadr_in_bits, ajz_in_bits)) {//12
       console.log('بحر الهزج');
+      retval.بحر = 'بحر الهزج';
     }
+
+    if (this.المضارع(sadr_in_bits, ajz_in_bits)) {//13
+      console.log('البحر المضارع');
+      retval.بحر = 'البحر المضارع';
+    }
+
+    if(this.المقتضب(sadr_in_bits, ajz_in_bits)) {//14
+      console.log('البحر المقتضب');
+      retval.بحر = 'البحر المقتضب';
+    }
+
+    if(this.المجتث(sadr_in_bits, ajz_in_bits)) {//15
+      console.log('البحر المجتث');
+      retval.بحر = 'البحر المجتث';
+    }
+
+    if(this.المتدارك(sadr_in_bits, ajz_in_bits)) {//16
+      console.log('البحر المتدارك');
+      retval.بحر = 'البحر المتدارك';
+    }
+
+    if(!retval.بحر) {
+      retval.موزون = false;
+      retval.بحر = VerifierService.NOT_MOZOON;
+    }
+
+    this.receivedFilter.emit(retval);
 
   }
 
@@ -172,39 +220,39 @@ export class VerifierService {
   //TODO: حروف الجر والعطف والتشبيه التي تتصل مع ال التعريف
   arood_word(prev_word: string, word: string, first_word: boolean, last_word: boolean) {
     //check for hidden alephs:
-    var possibility : string = this.hidden_aleph.get(word);
-    
+    var possibility: string = this.hidden_aleph.get(word);
+
     //حذف ألف الوصل لو كانت في غير موضع قطع (بداية البيت)
-    if(possibility) {
+    if (possibility) {
       word = possibility;
     }
     //remove non-spoken characters..
     var startingIndex = 0;
 
-    if(word.startsWith('ال')) {
+    if (word.startsWith('ال')) {
       //startingIndex = 1;
-      if(word[2] == this.sokoon) {
+      if (word[2] == this.sokoon) {
         //remove it
         word = this.replaceAt(word, 2, '');
       }
 
-      if(this.الحروف_الشمسية.includes(word[2])) {
-        
+      if (this.الحروف_الشمسية.includes(word[2])) {
+
         //if shamsy letter has shaddah, remove it and replace it by random harakah
-        if(word[3] == this.shaddah) {
+        if (word[3] == this.shaddah) {
           word = this.replaceAt(word, 3, this.فتحة);
         }
-        
-        word = this.replaceAt(word, 1, word[2]+this.sokoon);
-      } else if(this.الحروف_القمرية.includes(word[2])) {
+
+        word = this.replaceAt(word, 1, word[2] + this.sokoon);
+      } else if (this.الحروف_القمرية.includes(word[2])) {
         //do nothing
       }
 
       //remove الألف الساكنة
     }
 
-    if(word.startsWith('ا')) {
-      if(!first_word) {
+    if (word.startsWith('ا')) {
+      if (!first_word) {
         word = word.substr(1);
       } else {
         word = this.replaceAt(word, 0, 'أَ');
@@ -213,89 +261,89 @@ export class VerifierService {
     }
 
     //go through characters one by one and check for tanween and شدة
-    for(var j = startingIndex; j < word.length; j += 2) {
+    for (var j = startingIndex; j < word.length; j += 2) {
 
       var i = j + 1;
       //assume sokoon
-      if( i == word.length || ( //if no sokoon at last letter
+      if (i == word.length || ( //if no sokoon at last letter
         word[i] !== this.sokoon &&
         word[i] !== this.فتحة &&
         word[i] !== this.ضمة &&
         word[i] !== this.كسرة &&
         word[i] !== this.تنوين_كسر &&
-        word[i] !== this.تنوين_فتح && 
+        word[i] !== this.تنوين_فتح &&
         word[i] !== this.تنوين_ضم &&
         word[i] !== this.shaddah)) {
-          word = this.replaceAt(word, i-1, word[i-1]+this.sokoon);
-          continue;
+        word = this.replaceAt(word, i - 1, word[i - 1] + this.sokoon);
+        continue;
       }
 
-      if(word[i-1] == this.مد) {
-        word = this.replaceAt(word, i-1, 'أَاْ');
+      if (word[i - 1] == this.مد) {
+        word = this.replaceAt(word, i - 1, 'أَاْ');
         i += 2;
         continue;
-      } 
+      }
 
       //replace shaddah
-      if(word[i] == this.shaddah) {
+      if (word[i] == this.shaddah) {
 
-        word = this.replaceAt(word, i - 1, word[i-1]+this.sokoon);
-        word = this.replaceAt(word, i + 1, word[i-1]+this.فتحة);
+        word = this.replaceAt(word, i - 1, word[i - 1] + this.sokoon);
+        word = this.replaceAt(word, i + 1, word[i - 1] + this.فتحة);
 
-        i+=2;
+        i += 2;
 
-        if(word[i+1] == this.ضمة ||
-            word[i+1] == this.فتحة ||
-            word[i+1] == this.كسرة ||
-            word[i+1] == this.sokoon) {
+        if (word[i + 1] == this.ضمة ||
+          word[i + 1] == this.فتحة ||
+          word[i + 1] == this.كسرة ||
+          word[i + 1] == this.sokoon) {
           //remove it
-          word = this.replaceAt(word, i+1, '');
+          word = this.replaceAt(word, i + 1, '');
         }
       }
 
       //add tanween
-      if(word[i] == this.تنوين_فتح) {
+      if (word[i] == this.تنوين_فتح) {
         //TODO check tanween is before last for sure, and is not a mistake
         word = this.replaceAt(word, i + 1, this.نون_ساكنة);
         word = this.replaceAt(word, i, this.فتحة);
         i += 2;
-      } else if(word[i] == this.تنوين_ضم) {
+      } else if (word[i] == this.تنوين_ضم) {
         word = this.replaceAt(word, i, this.نون_ساكنة);
-        word = this.replaceAt(word, i - 1, word[i-1]+this.ضمة);
+        word = this.replaceAt(word, i - 1, word[i - 1] + this.ضمة);
         i += 2;
-      } else if(word[i] == this.تنوين_كسر) {
+      } else if (word[i] == this.تنوين_كسر) {
         word = this.replaceAt(word, i, this.نون_ساكنة);
-        word = this.replaceAt(word, i - 1, word[i-1]+this.كسرة);
+        word = this.replaceAt(word, i - 1, word[i - 1] + this.كسرة);
         i += 2;
       }
-      
+
       //ألف المد
     }
 
-        //التقاء ساكنين
-    if(word[1] == this.sokoon && prev_word[prev_word.length - 1] == this.sokoon) {
-          prev_word = this.replaceAt(prev_word, prev_word.length - 1, '');
-          prev_word = this.replaceAt(prev_word, prev_word.length - 1, '');
+    //التقاء ساكنين
+    if (word[1] == this.sokoon && prev_word[prev_word.length - 1] == this.sokoon) {
+      prev_word = this.replaceAt(prev_word, prev_word.length - 1, '');
+      prev_word = this.replaceAt(prev_word, prev_word.length - 1, '');
     }
 
     //إشباع حركة العروض والضرب
     //TODO: exceptions? like
     //إذا الشعب يومًا أراد الحياةَ
-    if(last_word) {
-      if(word[word.length - 1] == this.فتحة ||
+    if (last_word) {
+      if (word[word.length - 1] == this.فتحة ||
         word[word.length - 1] == this.ضمة ||
         word[word.length - 1] == this.كسرة) {
-          word = word + 'وْ'; // random letter at end of word
-        }
+        word = word + 'وْ'; // random letter at end of word
+      }
     }
 
     return prev_word + word;
   }
 
-  convert_to_bits(shatr : string) {
+  convert_to_bits(shatr: string) {
     var result = '';
-    for(var i = 1; i  < shatr.length; i += 2) {
-      if(shatr[i] !== this.sokoon) {
+    for (var i = 1; i < shatr.length; i += 2) {
+      if (shatr[i] !== this.sokoon) {
         result += '1';
       } else {
         result += '0';
@@ -311,17 +359,17 @@ export class VerifierService {
 
   الطويل(صدر, عجز) {
     // TODO: البيت المصرع من الممكن أن ينتهي بـ مفاعيلن في العروض
-    var sadr_reg : RegExp = new RegExp('^(' + this.فعولن + '|' + this.فعولُ + '|' + this.فعْلن + '|' + this.فعْل +')' + //فعلن وفعل قبيحات
-                                        '(' + this.مفاعيلن + '|' + this. مفاعلن + '|' + this.مفاعيل + ')' +
-                                        '(' + this.فعولن + '|' + this.فعولُ + ')' + (this.مفاعلن) + '$');
-    
-    var ajz_reg : RegExp = new RegExp('^(' + this.فعولن + '|' + this.فعولُ + '|' + this.فعْلن + '|' + this.فعْل +')' + //فعلن وفعل قبيحات
-                                        '(' + this.مفاعيلن + '|' + this. مفاعلن + '|' + this.مفاعيل + ')' +
-                                        '(' + this.فعولن + '|' + this.فعولُ + ')' +
-                                        '(' +this.مفاعلن + '|'+ this.مفاعيلن + '|' + this.فعولن + ')$');
-    
+    var sadr_reg: RegExp = new RegExp('^(' + this.فعولن + '|' + this.فعولُ + '|' + this.فعْلن + '|' + this.فعْل + ')' + //فعلن وفعل قبيحات
+      '(' + this.مفاعيلن + '|' + this.مفاعلن + '|' + this.مفاعيل + ')' +
+      '(' + this.فعولن + '|' + this.فعولُ + ')' + (this.مفاعلن) + '$');
 
-    if(sadr_reg.test(صدر) && ajz_reg.test(عجز)) {
+    var ajz_reg: RegExp = new RegExp('^(' + this.فعولن + '|' + this.فعولُ + '|' + this.فعْلن + '|' + this.فعْل + ')' + //فعلن وفعل قبيحات
+      '(' + this.مفاعيلن + '|' + this.مفاعلن + '|' + this.مفاعيل + ')' +
+      '(' + this.فعولن + '|' + this.فعولُ + ')' +
+      '(' + this.مفاعلن + '|' + this.مفاعيلن + '|' + this.فعولن + ')$');
+
+
+    if (sadr_reg.test(صدر) && ajz_reg.test(عجز)) {
       return true;
     }
 
@@ -329,29 +377,29 @@ export class VerifierService {
   }
 
   المتقارب(صدر, عجز) {
-    var sadr_tam_reg : RegExp = new RegExp('^(' + this.فعولن + '|' +this.فعولُ + '|' +this.فعْلن + '|' +this.فعْل +')' + 
-                                        '(' + this.فعولن + '|' +this.فعولُ + ')' +
-                                        '(' + this.فعولن + '|' +this.فعولُ + ')' +
-                                        '(' + this.فعولن + '|' +this.فعولُ + '|' + this.فعَل + ')$');
-    var ajz_tam_reg : RegExp = new RegExp('^(' + this.فعولن + '|' +this.فعولُ + ')' + 
-                                        '(' + this.فعولن + '|' +this.فعولُ + ')' +
-                                        '(' + this.فعولن + '|' +this.فعولُ + ')' +
-                                        '(' + this.فعولن + '|' + this.فعولْ + '|' + this.فعَل + '|' + '10' +')$');//فَع
+    var sadr_tam_reg: RegExp = new RegExp('^(' + this.فعولن + '|' + this.فعولُ + '|' + this.فعْلن + '|' + this.فعْل + ')' +
+      '(' + this.فعولن + '|' + this.فعولُ + ')' +
+      '(' + this.فعولن + '|' + this.فعولُ + ')' +
+      '(' + this.فعولن + '|' + this.فعولُ + '|' + this.فعَل + ')$');
+    var ajz_tam_reg: RegExp = new RegExp('^(' + this.فعولن + '|' + this.فعولُ + ')' +
+      '(' + this.فعولن + '|' + this.فعولُ + ')' +
+      '(' + this.فعولن + '|' + this.فعولُ + ')' +
+      '(' + this.فعولن + '|' + this.فعولْ + '|' + this.فعَل + '|' + '10' + ')$');//فَع
 
-    var sadr_majzoo_reg : RegExp = new RegExp('^(' + this.فعولن + '|' +this.فعولُ + '|' +this.فعْلن + '|' +this.فعْل +')' + 
-                                        '(' + this.فعولن + '|' +this.فعولُ + ')' +
-                                        '(' + this.فعَل + ')$');
-    var ajz_majzoo_reg : RegExp = new RegExp('^(' + this.فعولن + '|' +this.فعولُ + ')' + 
-                                        '(' + this.فعولن + '|' +this.فعولُ + ')' +
-                                        '(' + this.فعَل + '|' + '10' +')$');//فَع
-    
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.فعولن + '|' + this.فعولُ + '|' + this.فعْلن + '|' + this.فعْل + ')' +
+      '(' + this.فعولن + '|' + this.فعولُ + ')' +
+      '(' + this.فعَل + ')$');
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.فعولن + '|' + this.فعولُ + ')' +
+      '(' + this.فعولن + '|' + this.فعولُ + ')' +
+      '(' + this.فعَل + '|' + '10' + ')$');//فَع
 
-    if(sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
+
+    if (sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
       console.log('tam');
       return true;
     }
-    
-    if(sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+
+    if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
       console.log('majzoo');
       return true;
     }
@@ -366,50 +414,50 @@ export class VerifierService {
     // مستفعلن -> متعلن: نادر جدا، وقبيح جدا، ويسمى الخبل
     //فاعلن -> فعلن: وهو حسن
 
-    var sadr_tam_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' + 
-                                            '(' + this.فاعلن + '|' + this.فعِلن + ')' +
-                                            '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
-                                            '(' + this.فعِلن + ')$');
-    var ajz_tam_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' + 
-                                            '(' + this.فاعلن + '|' + this.فعِلن + ')' +
-                                            '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن +')' +
-                                            '(' + this.فعِلن + '|' +this.فعْلن + ')$');
+    var sadr_tam_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.فعِلن + ')$');
+    var ajz_tam_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.فعِلن + '|' + this.فعْلن + ')$');
 
-    var sadr_majzoo_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.مفتعلن + ')' + 
-                                              '(' + this.فاعلن + '|' + this.فعِلن + ')' +
-                                              '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن +')$');
-    var  ajz_majzoo_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن +')' + 
-                                              '(' + this.فاعلن + '|' + this.فعِلن + ')' +
-                                              '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +this.مستفعلان + '|' + this.مفعولن + ')$');
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$');
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.مستفعلان + '|' + this.مفعولن + ')$');
 
-    var sadr_majzoo_reg2 : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن +')' + 
-                                              '(' + this.فاعلن + '|' + this.فعِلن + /*'|' +this.فعولُ + */')' +
-                                              '(' + this.مفعولن + /*'|' +this.فعولُ + '|' + this.فعَل + */')$');
-    var  ajz_majzoo_reg2 : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن +')' + 
-                                              '(' + this.فاعلن + '|' + this.فعِلن + /*'|' +this.فعولُ + */')' +
-                                              '(' + this.مفعولن + ')$');
-    var sadr_majzoo_reg3 : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن +')' + 
-                                              '(' + this.فاعلن + '|' + this.فعِلن + ')' +
-                                              '(' + this.فعولن + ')$');
-    var  ajz_majzoo_reg3 : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن +')' + 
-                                              '(' + this.فاعلن + '|' + this.فعِلن + ')' +
-                                              '(' + this.فعولن + ')$');
-    if(sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
+    var sadr_majzoo_reg2: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + /*'|' +this.فعولُ + */')' +
+      '(' + this.مفعولن + /*'|' +this.فعولُ + '|' + this.فعَل + */')$');
+    var ajz_majzoo_reg2: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + /*'|' +this.فعولُ + */')' +
+      '(' + this.مفعولن + ')$');
+    var sadr_majzoo_reg3: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')' +
+      '(' + this.فعولن + ')$');
+    var ajz_majzoo_reg3: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')' +
+      '(' + this.فعولن + ')$');
+    if (sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
       console.log('tam');
       return true;
     }
-    
-    if(sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+
+    if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
       console.log('majzoo1');
       return true;
     }
 
-    if(sadr_majzoo_reg2.test(صدر) && ajz_majzoo_reg2.test(عجز)) {
+    if (sadr_majzoo_reg2.test(صدر) && ajz_majzoo_reg2.test(عجز)) {
       console.log('majzoo2');
       return true;
     }
 
-    if(sadr_majzoo_reg3.test(صدر) && ajz_majzoo_reg3.test(عجز)) {
+    if (sadr_majzoo_reg3.test(صدر) && ajz_majzoo_reg3.test(عجز)) {
       console.log('majzoo3');
       return true;
     }
@@ -421,42 +469,42 @@ export class VerifierService {
 
     //مستفعلن -> متعلن: وهو قبيح
     //مفعولن -> فعولن: ضرب التام المقطوع فقط
-    var sadr_tam_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' + 
-                                              '(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
-                                              '(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$');
+    var sadr_tam_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$');
 
-    var ajz_tam_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' + 
-                                              '(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
-                                              '(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.مفعولن + '|' + this.فعولن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$');
+    var ajz_tam_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.مفعولن + '|' + this.فعولن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$');
 
-    var sadr_majzoo_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' + 
-                                              '(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$'); 
-    var ajz_majzoo_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' + 
-                                              '(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$'); 
-    
-    var sadr_mashtoor_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' + 
-                                      '(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
-                                      '(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$');
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$');
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$');
 
-    var sadr_manhook_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' + 
-                                                '(' + this.مستفعلن + '|' +  this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$'); 
+    var sadr_mashtoor_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$');
 
-    if(sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
+    var sadr_manhook_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متعلن + '|' + this.متفعلن + '|' + this.مفتعلن + ')$');
+
+    if (sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
       console.log('tam');
       return true;
     }
-                                                
-    if(sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+
+    if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
       console.log('majzoo');
       return true;
     }
 
-    if(sadr_mashtoor_reg.test(صدر) && !عجز) {
+    if (sadr_mashtoor_reg.test(صدر) && !عجز) {
       console.log('مشطور');
       return true;
     }
 
-    if(sadr_manhook_reg.test(صدر) && !عجز) {
+    if (sadr_manhook_reg.test(صدر) && !عجز) {
       console.log('منهوك');
       return true;
     }
@@ -464,47 +512,47 @@ export class VerifierService {
   }
 
   السريع(صدر, عجز) {
-    
+
     //مستفعلن -> متعلن: وهو قبيح
     //مفعولان -< فعولان
-    var sadr_tam_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' + 
-                                            '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' +
-                                            '(' + this.فاعلن + '|' + this.فعِلن +')$');
+    var sadr_tam_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')$');
 
-    var ajz_tam_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' + 
-                                            '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' +
-                                            '(' + this.فاعلان + '|' + this.فاعلن + '|' + this.فعْلن + ')$');
-    
-
-    var sadr_tam_reg2 : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' + 
-                                            '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' +
-                                            '(' + this.فعِلن + ')$');
-
-    var ajz_tam_reg2 : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' + 
-                                            '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' +
-                                            '(' + this.فعِلن + ')$');
+    var ajz_tam_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.فاعلان + '|' + this.فاعلن + '|' + this.فعْلن + ')$');
 
 
-    var sadr_mashtoor_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' + 
-                                                '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' +
-                                                '(' + this.مفعولان + '|' + this.فعولان + '|' + this.مفعولن + '|' + this.فعولن + ')$');
-    
+    var sadr_tam_reg2: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.فعِلن + ')$');
 
-    if(sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
+    var ajz_tam_reg2: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.فعِلن + ')$');
+
+
+    var sadr_mashtoor_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.مفعولان + '|' + this.فعولان + '|' + this.مفعولن + '|' + this.فعولن + ')$');
+
+
+    if (sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
       console.log('tam');
       return true;
     }
-                                                
-    if(sadr_tam_reg2.test(صدر) && ajz_tam_reg2.test(عجز)) {
+
+    if (sadr_tam_reg2.test(صدر) && ajz_tam_reg2.test(عجز)) {
       console.log('tam2');
       return true;
     }
 
-    if(sadr_mashtoor_reg.test(صدر) && !عجز) {
+    if (sadr_mashtoor_reg.test(صدر) && !عجز) {
       console.log('مشطور');
       return true;
-    }  
-    
+    }
+
     return false;
 
   }
@@ -514,28 +562,28 @@ export class VerifierService {
     //مفعولات -> فعولات وهو قبيح
     //مفعولات -> فعلات وهو قبيح جدا!
 
-    var sadr_tam_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' + 
-                                            '(' + this.مفعولات + '|' + this.فاعلات + '|' + this.فعولات + '|' + this.فعلات + ')' +
-                                            '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')$');
+    var sadr_tam_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.مفعولات + '|' + this.فاعلات + '|' + this.فعولات + '|' + this.فعلات + ')' +
+      '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')$');
 
-    var ajz_tam_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' + 
-                                            '(' + this.مفعولات + '|' + this.فاعلات + '|' + this.فعولات + '|' + this.فعلات + ')' +
-                                            '(' + this.مفعولن + '|' + this.فعولن + '|' + this.مفتعلن + ')$');
+    var ajz_tam_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.مفعولات + '|' + this.فاعلات + '|' + this.فعولات + '|' + this.فعلات + ')' +
+      '(' + this.مفعولن + '|' + this.فعولن + '|' + this.مفتعلن + ')$');
 
-    var sadr_manhook_reg : RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' +  this.متعلن + ')' + 
-                                            '(' + this.مفعولان + '|' + this.فعولان + '|' + this.مفعولن + '|' + this.فعولن + ')$');
+    var sadr_manhook_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.مفتعلن + '|' + this.متعلن + ')' +
+      '(' + this.مفعولان + '|' + this.فعولان + '|' + this.مفعولن + '|' + this.فعولن + ')$');
 
 
-    if(sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
+    if (sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
       console.log('tam');
       return true;
     }
 
-    if(sadr_manhook_reg.test(صدر) && !عجز) {
+    if (sadr_manhook_reg.test(صدر) && !عجز) {
       console.log('منهوك');
       return true;
-    }  
-    
+    }
+
     return false;
   }
 
@@ -543,38 +591,38 @@ export class VerifierService {
     //فعلاتن: هذا الضرب يجوز موافقة العروض له في البيت المصرع وقد يلحق أحدهما أو كليهما الإضمار، وهو تسكين الثاني المتحرك. 
     //متفاعلن -> مفاعلن، ليس بالحسن
     //متفاعلن -> مفتعلن وهو قبيح جدا
-    var sadr_tam_reg : RegExp = new RegExp('^(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' + 
-                                            '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
-                                            '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')$');
-    var ajz_tam_reg : RegExp = new RegExp('^(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' + 
-                                            '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
-                                            '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.فعلاتن + '|' + this.فعْلن + '|' + this.مفتعلن + ')$');
-    var sadr_tam_reg2 : RegExp = new RegExp('^(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' + 
-                                            '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
-                                            '(' + this.فعِلن + ')$');
-    var ajz_tam_reg2 : RegExp = new RegExp('^(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' + 
-                                            '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
-                                            '(' + this.فعِلن + '|' + this.فعْلن + ')$');
-    var sadr_majzoo_reg : RegExp = new RegExp('^(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' + 
-                                            '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')$');
-    var ajz_majzoo_reg : RegExp = new RegExp('^(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن +')' + 
-                                            '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + '|' +  this.متفاعلاتن + '|' +  this.متفاعلان + '|' +  this.فعلاتن + ')$');
-  
-    if(sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
-      console.log('tam');
-      return true;
-    }
-                                                
-    if(sadr_tam_reg2.test(صدر) && ajz_tam_reg2.test(عجز)) {
+    var sadr_tam_reg: RegExp = new RegExp('^(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')$');
+    var ajz_tam_reg: RegExp = new RegExp('^(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.فعلاتن + '|' + this.فعْلن + '|' + this.مفتعلن + ')$');
+    var sadr_tam_reg2: RegExp = new RegExp('^(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.فعِلن + ')$');
+    var ajz_tam_reg2: RegExp = new RegExp('^(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.فعِلن + '|' + this.فعْلن + ')$');
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')$');
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + ')' +
+      '(' + this.متفاعلن + '|' + this.متْفاعلن + '|' + this.مفاعلن + '|' + this.مفتعلن + '|' + this.متفاعلاتن + '|' + this.متفاعلان + '|' + this.فعلاتن + ')$');
+
+    if (sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
       console.log('tam');
       return true;
     }
 
-    if(sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+    if (sadr_tam_reg2.test(صدر) && ajz_tam_reg2.test(عجز)) {
+      console.log('tam');
+      return true;
+    }
+
+    if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
       console.log('مجزوء');
       return true;
-    }  
-    
+    }
+
 
     return false;
   }
@@ -585,28 +633,28 @@ export class VerifierService {
     //مفاعلتن ->     مُفاعيلٌ: زحاف نادر وقبيح
     //مفاعلتن -> مفتعلن: وهو زحاف نادر وقبيح
 
-    var sadr_tam_reg : RegExp = new RegExp('^(' + this.مفاعلتن + '|'+ this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')' + 
-                                            '(' + this.مفاعلتن + '|'+ this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')' +
-                                            '(' + this.فعولن + ')$');
-    var ajz_tam_reg : RegExp = new RegExp('^(' + this.مفاعلتن + '|'+ this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')' + 
-                                            '(' + this.مفاعلتن + '|'+ this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')' +
-                                            '(' + this.فعولن + ')$');
+    var sadr_tam_reg: RegExp = new RegExp('^(' + this.مفاعلتن + '|' + this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')' +
+      '(' + this.مفاعلتن + '|' + this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')' +
+      '(' + this.فعولن + ')$');
+    var ajz_tam_reg: RegExp = new RegExp('^(' + this.مفاعلتن + '|' + this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')' +
+      '(' + this.مفاعلتن + '|' + this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')' +
+      '(' + this.فعولن + ')$');
 
-    var sadr_majzoo_reg : RegExp = new RegExp('^(' + this.مفاعلتن + '|'+ this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')' + 
-                                            '(' + this.مفاعلتن + '|'+ this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')$');
-    
-    var ajz_majzoo_reg : RegExp = new RegExp('^(' + this.مفاعلتن + '|'+ this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')' + 
-                                            '(' + this.مفاعلتن + '|' + this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')$');
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.مفاعلتن + '|' + this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')' +
+      '(' + this.مفاعلتن + '|' + this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')$');
 
-    if(sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.مفاعلتن + '|' + this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')' +
+      '(' + this.مفاعلتن + '|' + this.مفاعلْتن + '|' + this.مفاعلن + '|' + this.مفاعيل + '|' + this.مفتعلن + '|' + this.مفعولن + ')$');
+
+    if (sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
       console.log('تام');
       return true;
     }
 
-    if(sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+    if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
       console.log('مجزوء');
       return true;
-    } 
+    }
 
     return false;
 
@@ -614,39 +662,39 @@ export class VerifierService {
 
   المديد(صدر, عجز) {
 
-  //فاعلاتن -> فعلات: زحاف قبيح
+    //فاعلاتن -> فعلات: زحاف قبيح
     //فاعلاتن -> فعلات: نادر وقبيح جدا
-    var sadr_majzoo_reg : RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فاعلات + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' + 
-                                            '(' + this.فاعلن + '|' + this.فعِلن + ')' +
-                                            '(' + this.فاعلاتن + '|' + this.فعلاتن + '|' + this.فاعلات + '|' + this.فعلات + ')$');    
-    var ajz_majzoo_reg : RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فاعلات + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' + 
-                                            '(' + this.فاعلن + '|' + this.فعِلن + ')' +
-                                            '(' + this.فاعلاتن + '|' + this.فعلاتن + ')$');
-    var sadr_majzoo_reg2 : RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فاعلات + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' + 
-                                            '(' + this.فاعلن + '|' + this.فعِلن + ')' +
-                                            '(' + this.فاعلن + ')$');   
-    var ajz_majzoo_reg2 : RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فاعلات + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' + 
-                                            '(' + this.فاعلن + '|' + this.فعِلن + ')' +
-                                            '(' + this.فاعلان + '|' + this.فاعلن + '|' + this.فعْلن + ')$');                                                                                         
-    var sadr_majzoo_reg3 : RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فاعلات + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' + 
-                                            '(' + this.فاعلن + '|' + this.فعِلن + ')' +
-                                            '(' + this.فعِلن + ')$');   
-    var ajz_majzoo_reg3 : RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فاعلات + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' + 
-                                            '(' + this.فاعلن + '|' + this.فعِلن + ')' +
-                                            '(' + this.فعِلن + '|' + this.فعْلن + ')$');
-    
-    
-    if(sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
-      console.log('مجزوء');
-      return true;
-    }
-    
-    if(sadr_majzoo_reg2.test(صدر) && ajz_majzoo_reg2.test(عجز)) {
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فاعلات + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلاتن + '|' + this.فعلاتن + '|' + this.فاعلات + '|' + this.فعلات + ')$');
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فاعلات + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلاتن + '|' + this.فعلاتن + ')$');
+    var sadr_majzoo_reg2: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فاعلات + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلن + ')$');
+    var ajz_majzoo_reg2: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فاعلات + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلان + '|' + this.فاعلن + '|' + this.فعْلن + ')$');
+    var sadr_majzoo_reg3: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فاعلات + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')' +
+      '(' + this.فعِلن + ')$');
+    var ajz_majzoo_reg3: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فاعلات + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')' +
+      '(' + this.فعِلن + '|' + this.فعْلن + ')$');
+
+
+    if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
       console.log('مجزوء');
       return true;
     }
 
-    if(sadr_majzoo_reg3.test(صدر) && ajz_majzoo_reg3.test(عجز)) {
+    if (sadr_majzoo_reg2.test(صدر) && ajz_majzoo_reg2.test(عجز)) {
+      console.log('مجزوء');
+      return true;
+    }
+
+    if (sadr_majzoo_reg3.test(صدر) && ajz_majzoo_reg3.test(عجز)) {
       console.log('مجزوء');
       return true;
     }
@@ -656,29 +704,29 @@ export class VerifierService {
 
   الرمل(صدر, عجز) {
 
-    var sadr_tam_reg : RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' + 
-                                                '(' + this.فاعلاتن + '|' + this.فعلاتن + '|' + this.فاعلات + '|' + this.فعلات + ')' +
-                                                '(' + this.فاعلن + '|' + this.فعِلن + ')$');    
-    var ajz_tam_reg : RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' + 
-                                              '(' + this.فاعلاتن + '|' + this.فعِلن + '|' + this.فعلاتن + '|' + this.فاعلات + '|' + this.فعلات + ')' +
-                                              '(' + this.فاعلاتن + '|' + this.فاعلان + '|' + this.فاعلن + '|' + this.فعلاتن + '|' + this.فعلات + '|' + this.فعِلن + ')$');//check
+    var sadr_tam_reg: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' +
+      '(' + this.فاعلاتن + '|' + this.فعلاتن + '|' + this.فاعلات + '|' + this.فعلات + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')$');
+    var ajz_tam_reg: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' +
+      '(' + this.فاعلاتن + '|' + this.فعِلن + '|' + this.فعلاتن + '|' + this.فاعلات + '|' + this.فعلات + ')' +
+      '(' + this.فاعلاتن + '|' + this.فاعلان + '|' + this.فاعلن + '|' + this.فعلاتن + '|' + this.فعلات + '|' + this.فعِلن + ')$');//check
 
-    var sadr_majzoo_reg : RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' + 
-                                              '(' + this.فاعلاتن + '|' + this.فعِلن + '|' + this.فعلات + '|' + this.فعلاتن + ')$');    
-    var ajz_majzoo_reg : RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' + 
-                                            '(' + this.فاعلاتان + '|' + this.فاعلاتن + '|' + this.فاعلن + '|' + this.فعلاتن + '|' + this.فعلات + '|' + this.فعلاتن + '|' + this.فعِلن + ')$');
-  
-    if(sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' +
+      '(' + this.فاعلاتن + '|' + this.فعِلن + '|' + this.فعلات + '|' + this.فعلاتن + ')$');
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلات + '|' + this.فاعلات + '|' + this.فعلاتن + ')' +
+      '(' + this.فاعلاتان + '|' + this.فاعلاتن + '|' + this.فاعلن + '|' + this.فعلاتن + '|' + this.فعلات + '|' + this.فعلاتن + '|' + this.فعِلن + ')$');
+
+    if (sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
       console.log('تام');
       return true;
     }
-    
-    
-    if(sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+
+
+    if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
       console.log('مجزوء');
       return true;
     }
-    
+
     return false;
   }
 
@@ -692,42 +740,42 @@ export class VerifierService {
     //فاعلاتن -> فاعلاتُ: يقع في الحشو والعروض وهو نادر مستكره
     //مستفعلن -> مستفعل: قبيح ونادر
     //مستفعلن -> متفعل: قبيح جدا
-    var sadr_tam_reg : RegExp = new RegExp('^('+this.فاعلاتن + '|' + this.فعلاتن+')'+
-                                            '('+this.مستفعلن + '|' + this.متفعل + '|' + this.مستفعل + '|' + this.متفعلن+')'+
-                                            '('+this.فاعلاتن + '|' + this.فعلاتن+')$');
-    
-    var ajz_tam_reg : RegExp = new RegExp('^('+this.فاعلاتن + '|' + this.فعلاتن+')'+
-                                          '('+this.مستفعلن + '|' + this.متفعل + '|' + this.مستفعل + '|' + this.متفعلن+')'+
-                                          '('+this.فاعلاتن + '|' + this.فعلاتن + '|' + this.مفعولن + '|' + this.فاعلن + '|' + this.فعِلن + ')$');
+    var sadr_tam_reg: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلاتن + ')' +
+      '(' + this.مستفعلن + '|' + this.متفعل + '|' + this.مستفعل + '|' + this.متفعلن + ')' +
+      '(' + this.فاعلاتن + '|' + this.فعلاتن + ')$');
 
-    var sadr_tam_reg2 : RegExp = new RegExp('^('+this.فاعلاتن + '|' + this.فعلاتن+')'+
-                                          '('+this.مستفعلن + '|' + this.متفعل + '|' + this.مستفعل + '|' + this.متفعلن+')'+
-                                          '('+this.فاعلن + '|' + this.فعِلن+')$');
-  
-    var ajz_tam_reg2 : RegExp = new RegExp('^('+this.فاعلاتن + '|' + this.فعلاتن+')'+
-                                          '('+this.مستفعلن + '|' + this.متفعل + '|' + this.مستفعل + '|' + this.متفعلن+')'+
-                                          '('+this.فاعلن + '|' + this.فعِلن + ')$');
-    
-    var sadr_majzoo_reg : RegExp = new RegExp('^('+this.فاعلاتن + '|' + this.فعلاتن+')'+
-                                          '('+this.مستفعلن + '|' + this.متفعل + '|' + this.مستفعل + '|' + this.متفعلن+')$');
-    var ajz_majzoo_reg : RegExp = new RegExp('^('+this.فاعلاتن + '|' + this.فعلاتن+')'+
-                                          '('+this.مستفعلن + '|' + this.متفعلن +'|'+this.فعولن+')$');
-  
-    if(sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
+    var ajz_tam_reg: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلاتن + ')' +
+      '(' + this.مستفعلن + '|' + this.متفعل + '|' + this.مستفعل + '|' + this.متفعلن + ')' +
+      '(' + this.فاعلاتن + '|' + this.فعلاتن + '|' + this.مفعولن + '|' + this.فاعلن + '|' + this.فعِلن + ')$');
+
+    var sadr_tam_reg2: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلاتن + ')' +
+      '(' + this.مستفعلن + '|' + this.متفعل + '|' + this.مستفعل + '|' + this.متفعلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')$');
+
+    var ajz_tam_reg2: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلاتن + ')' +
+      '(' + this.مستفعلن + '|' + this.متفعل + '|' + this.مستفعل + '|' + this.متفعلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعِلن + ')$');
+
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلاتن + ')' +
+      '(' + this.مستفعلن + '|' + this.متفعل + '|' + this.مستفعل + '|' + this.متفعلن + ')$');
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.فاعلاتن + '|' + this.فعلاتن + ')' +
+      '(' + this.مستفعلن + '|' + this.متفعلن + '|' + this.فعولن + ')$');
+
+    if (sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
       console.log('تام');
       return true;
     }
 
-    if(sadr_tam_reg2.test(صدر) && ajz_tam_reg2.test(عجز)) {
+    if (sadr_tam_reg2.test(صدر) && ajz_tam_reg2.test(عجز)) {
       console.log('تام');
       return true;
     }
-    
-    
-    if(sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+
+
+    if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
       console.log('مجزوء');
       return true;
-    }  
+    }
 
     return false;
   }
@@ -735,17 +783,100 @@ export class VerifierService {
   الهزج(صدر, عجز) {
     //مفاعيلن > مفاعلن وهو نادر وقبيح
     //
-    var sadr_majzoo_reg : RegExp = new RegExp('^('+ this.مفاعيلن + '|' + this.مفاعلن + '|' + this.مفاعيل + ')'+
-                                              '('+ this.مفاعيلن + '|' + this.مفاعلن + '|' + this.مفاعيل + ')$');
-    var ajz_majzoo_reg : RegExp = new RegExp('^('+ this.مفاعيلن + '|' + this.مفاعلن + '|' + this.مفاعيل + ')'+
-                                              '('+ this.مفاعيلن + '|' + this.فعولن + ')$');
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.مفاعيلن + '|' + this.مفاعلن + '|' + this.مفاعيل + ')' +
+      '(' + this.مفاعيلن + '|' + this.مفاعلن + '|' + this.مفاعيل + ')$');
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.مفاعيلن + '|' + this.مفاعلن + '|' + this.مفاعيل + ')' +
+      '(' + this.مفاعيلن + '|' + this.فعولن + ')$');
 
-    if(sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+    if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
       console.log('مجزوء');
       return true;
     }
 
     return false;
+  }
+
+  المضارع(صدر, عجز) {
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.مفاعيل + '|' + this.فاعلن + '|' + this.مفعول + ')' +
+      '(' + this.فاعلاتن + '|' + this.فاعلات + ')$');
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.مفاعيل + '|' + this.فاعلن + '|' + this.مفعول + ')' +
+      '(' + this.فاعلاتن + ')$');
+
+    var sadr_majzoo_reg2: RegExp = new RegExp('^(' + this.مفاعلن + '|' + this.فاعلن + '|' + this.مفعول + ')' +
+      '(' + this.فاعلاتن + '|' + this.فاعلات + ')$');
+    var ajz_majzoo_reg2: RegExp = new RegExp('^(' + this.مفاعلن + '|' + this.فاعلن + '|' + this.مفعول + ')' +
+      '(' + this.فاعلاتن + ')$');
+
+    if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+      console.log('مجزوء');
+      return true;
+    }
+
+    if (sadr_majzoo_reg2.test(صدر) && ajz_majzoo_reg2.test(عجز)) {
+      console.log('مجزوء');
+      return true;
+    }
+
+    return false;
+  }
+
+  المجتث(صدر, عجز) {
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعل + '|'+ this.متفعلن + '|' + this.مستفعل + ')' +
+      '(' + this.فاعلاتن + '|' + this.فعلاتن + ')$');
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.مستفعلن + '|' + this.متفعل + '|'+ this.متفعلن + '|' + this.مستفعل + ')' +
+      '(' + this.فاعلاتن + '|' + this.فعلاتن + '|' + this.مفعولن + ')$');
+
+    if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+      console.log('مجزوء');
+      return true;
+    }
+
+    return false;
+  }
+
+  المقتضب(صدر, عجز) {
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.فاعلات + '|' + this.مفاعيل + ')' +
+      '(' + this.مفتعلن + ')$');
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.فاعلات + '|' + this.مفاعيل + ')' +
+      '(' + this.مفتعلن + ')$');
+
+    if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+      console.log('مجزوء');
+      return true;
+    }
+
+    return false;
+  }
+
+  المتدارك(صدر, عجز) {
+    var sadr_tam_reg: RegExp = new RegExp('^(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')$');
+    var ajz_tam_reg: RegExp = new RegExp('^(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')$');
+
+    var sadr_majzoo_reg: RegExp = new RegExp('^(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')$');
+    var ajz_majzoo_reg: RegExp = new RegExp('^(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + ')' +
+      '(' + this.فاعلن + '|' + this.فعْلن + '|' + this.فعِلن + '|' + this.فاعلان + '|' + this.فعلاتن + ')$');
+
+      if (sadr_tam_reg.test(صدر) && ajz_tam_reg.test(عجز)) {
+        console.log('tam');
+        return true;
+      }
+  
+      if (sadr_majzoo_reg.test(صدر) && ajz_majzoo_reg.test(عجز)) {
+        console.log('majzoo1');
+        return true;
+      }
+
+      return false;
   }
 
   replaceAt(w: string, index: number, replacement: string) {

@@ -1,6 +1,19 @@
 <div class="container">
+<p class="instructions" dir="rtl">
+- افصل الشطرين بـ ***. <br>
+- <a href="https://tahadz.com/mishkal/index" target="_blank">شكّل</a> البيت المُدخل. الأحرف غير المشكلة ستعتبر ساكنة. <br>
+- لا تشكل: هذا، هذه، هذان، هؤلاء، ذلك، أولئك، الله، الرحمن، إله، لكن، طه.<br>
+- لا تشكل ال التعريف.<br>
+- لا تشكل ألف المد.<br>
+- حروف العطف تُفصل بمسافة عن ال التعريف.<br>
+- الشدة لايوضع معها تشكيل آخر.<br>
+- تنوين الفتح يوضع على الحرف قبل الألف.<br>
+- أشبع هاء الغائب إن لم يتم التعرف على بحر البيت في المرة الأولى (رأيتهُ -> رأيتهُو).<br>
+- لا تكتب واو عمرو ولا ألف واو الجماعة.<br>
+- الموقع حاليًا لايتعرف على الأبيات المصرّعة.
+</p>
 <mat-form-field dir="rtl" class="input">
-    <textarea matInput #poem poem.value=''></textarea>
+    <textarea style="padding-top: 40px; align: center" matInput #poem poem.value=''></textarea>
 </mat-form-field>
-<button mat-raised-button color="primary" (click)="submit(poem.value)">تحقّق</button>
+<button mat-raised-button color="primary" class="button" (click)="submit(poem.value)">تحقّق</button>
 </div>
