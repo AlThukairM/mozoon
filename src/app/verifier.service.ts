@@ -263,6 +263,12 @@ export class VerifierService {
     //go through characters one by one and check for tanween and شدة
     for (var i = 1; i <= word.length; i += 2) {
 
+      if (word[i - 1] == this.مد) {
+        word = this.replaceAt(word, i - 1, 'أَاْ');
+        i += 2;
+        continue;
+      }
+
       //assume sokoon
       if (i == word.length || ( //if no sokoon at last letter
         word[i] !== this.sokoon &&
@@ -274,12 +280,6 @@ export class VerifierService {
         word[i] !== this.تنوين_ضم &&
         word[i] !== this.shaddah)) {
         word = this.replaceAt(word, i - 1, word[i - 1] + this.sokoon);
-        continue;
-      }
-
-      if (word[i - 1] == this.مد) {
-        word = this.replaceAt(word, i - 1, 'أَاْ');
-        i += 2;
         continue;
       }
 
