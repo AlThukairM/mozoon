@@ -227,7 +227,7 @@ export class VerifierService {
       word = possibility;
     }
     //remove non-spoken characters..
-    var startingIndex = 0;
+    
 
     if (word.startsWith('ال')) {
       //startingIndex = 1;
@@ -261,9 +261,8 @@ export class VerifierService {
     }
 
     //go through characters one by one and check for tanween and شدة
-    for (var j = startingIndex; j < word.length; j += 2) {
+    for (var i = 1; i <= word.length; i += 2) {
 
-      var i = j + 1;
       //assume sokoon
       if (i == word.length || ( //if no sokoon at last letter
         word[i] !== this.sokoon &&
@@ -320,10 +319,21 @@ export class VerifierService {
       //ألف المد
     }
 
-    //التقاء ساكنين
+    //التقاء ساكنين بين كلمتين منفصلتين
     if (word[1] == this.sokoon && prev_word[prev_word.length - 1] == this.sokoon) {
       prev_word = this.replaceAt(prev_word, prev_word.length - 1, '');
       prev_word = this.replaceAt(prev_word, prev_word.length - 1, '');
+    }
+
+    //التقاء ساكنين في كلمة واحدة
+    for (var i = 3; i < word.length; i += 2) {
+      if(word[i] == this.sokoon && word[i-2] == this.sokoon) {
+        
+        word = this.replaceAt(word, i-3, '');
+        word = this.replaceAt(word, i-3, '');
+        i -= 2;
+        
+      }
     }
 
     //إشباع حركة العروض والضرب
