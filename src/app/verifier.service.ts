@@ -326,9 +326,9 @@ export class VerifierService {
     }
 
     //التقاء ساكنين في كلمة واحدة
-    for (var i = 3; i < word.length; i += 2) {
+    for (var i = 3; i < word.length - 1; i += 2) {
       if(word[i] == this.sokoon && word[i-2] == this.sokoon) {
-        
+        // إلا في حالات المد
         word = this.replaceAt(word, i-3, '');
         word = this.replaceAt(word, i-3, '');
         i -= 2;
