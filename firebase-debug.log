@@ -1,0 +1,61 @@
+[debug] [2020-03-22T17:38:04.515Z] ----------------------------------------------------------------------
+[debug] [2020-03-22T17:38:04.517Z] Command:       /usr/local/bin/node /usr/local/bin/firebase deploy
+[debug] [2020-03-22T17:38:04.517Z] CLI Version:   7.15.0
+[debug] [2020-03-22T17:38:04.517Z] Platform:      darwin
+[debug] [2020-03-22T17:38:04.517Z] Node Version:  v10.15.3
+[debug] [2020-03-22T17:38:04.518Z] Time:          Sun Mar 22 2020 20:38:04 GMT+0300 (Arabian Standard Time)
+[debug] [2020-03-22T17:38:04.518Z] ----------------------------------------------------------------------
+[debug] [2020-03-22T17:38:04.518Z] 
+[debug] [2020-03-22T17:38:04.526Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2020-03-22T17:38:04.526Z] > authorizing via signed-in user
+[debug] [2020-03-22T17:38:04.526Z] [iam] checking project mozoon-92813 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2020-03-22T17:38:04.528Z] >>> HTTP REQUEST POST https://cloudresourcemanager.googleapis.com/v1/projects/mozoon-92813:testIamPermissions  
+
+[debug] [2020-03-22T17:38:05.786Z] <<< HTTP RESPONSE 200
+[debug] [2020-03-22T17:38:05.789Z] >>> HTTP REQUEST GET https://firebase.googleapis.com/v1beta1/projects/mozoon-92813  
+ 
+[debug] [2020-03-22T17:38:06.282Z] <<< HTTP RESPONSE 200
+[info] 
+[info] === Deploying to 'mozoon-92813'...
+[info] 
+[info] i  deploying hosting
+[debug] [2020-03-22T17:38:06.287Z] >>> HTTP REQUEST POST https://firebasehosting.googleapis.com/v1beta1/sites/mozoon-92813/versions  
+
+[debug] [2020-03-22T17:38:08.338Z] <<< HTTP RESPONSE 200
+[info] i  hosting[mozoon-92813]: beginning deploy...
+[info] i  hosting[mozoon-92813]: found 10 files in public
+[debug] [2020-03-22T17:38:08.380Z] [hosting] hash cache [cHVibGlj] stored for 10 files
+[debug] [2020-03-22T17:38:08.380Z] [hosting][hash queue][FINAL]
+[debug] [2020-03-22T17:38:08.380Z] >>> HTTP REQUEST POST https://firebasehosting.googleapis.com/v1beta1/sites/mozoon-92813/versions/a20eb04d2d8d020c:populateFiles  
+ <request body omitted>
+[debug] [2020-03-22T17:38:09.771Z] <<< HTTP RESPONSE 200
+[debug] [2020-03-22T17:38:09.775Z] [hosting][populate queue][FINAL]
+[debug] [2020-03-22T17:38:09.775Z] [hosting] uploads queued: 3
+[debug] [2020-03-22T17:38:12.700Z] [hosting][upload queue][FINAL]
+[info] ✔  hosting[mozoon-92813]: file upload complete
+[debug] [2020-03-22T17:38:12.701Z] [hosting] deploy completed after 4362ms
+[debug] [2020-03-22T17:38:12.702Z] [
+  {
+    "config": {
+      "public": "public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "site": "mozoon-92813"
+    },
+    "site": "mozoon-92813",
+    "version": "sites/mozoon-92813/versions/a20eb04d2d8d020c"
+  }
+]
+[info] i  hosting[mozoon-92813]: finalizing version...
+[debug] [2020-03-22T17:38:12.703Z] >>> HTTP REQUEST PATCH https://firebasehosting.googleapis.com/v1beta1/sites/mozoon-92813/versions/a20eb04d2d8d020c?updateMask=status  
+
+[debug] [2020-03-22T17:38:13.971Z] <<< HTTP RESPONSE 200
+[debug] [2020-03-22T17:38:13.972Z] [hosting] finalized version for mozoon-92813:
+[info] ✔  hosting[mozoon-92813]: version finalized
+[info] i  hosting[mozoon-92813]: releasing new version...
+[debug] [2020-03-22T17:38:13.973Z] >>> HTTP REQUEST POST https://firebasehosting.googleapis.com/v1beta1/sites/mozoon-92813/releases?version_name=sites/mozoon-92813/versions/a20eb04d2d8d020c  
+
+[debug] [2020-03-22T17:38:15.225Z] <<< HTTP RESPONSE 200
