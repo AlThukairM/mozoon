@@ -7,7 +7,7 @@ import {HttpClient} from '@angular/common/http';
   providedIn: 'root'
 })
 export class FeedbackService {
-  url = 'localhost:3000/api/verify';
+  url = 'https://موزون.com/api/verify';
   receivedFilter: EventEmitter<Feedback>;
 
   constructor(private http: HttpClient) {
