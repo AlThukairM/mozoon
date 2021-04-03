@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { VerifierService } from '../verifier.service';
+import {FeedbackService} from '../feedback/feedback.service';
 
 
 @Component({
@@ -9,15 +9,14 @@ import { VerifierService } from '../verifier.service';
 })
 export class EditorComponent implements OnInit {
 
-  constructor(private verifierService: VerifierService) { 
-    
+  constructor(private feedbackService: FeedbackService) {
   }
 
   ngOnInit(): void {
   }
 
   submit(poem: string) {
-    var result = this.verifierService.verify(poem);
+    const result = this.feedbackService.verify(poem);
     console.log(result);
   }
 
