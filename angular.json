@@ -123,5 +123,8 @@
       }
     }
   },
-  "defaultProject": "mozoon"
+  "defaultProject": "mozoon",
+  "cli": {
+    "analytics": "3f0739e1-3bbf-4f6e-8ae6-ea4d017b6834"
+  }
 }

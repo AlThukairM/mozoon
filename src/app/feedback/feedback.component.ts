@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { VerifierService } from '../verifier.service';
+import { FeedbackService } from './feedback.service';
 import { Feedback } from './feedback';
 
 @Component({
@@ -9,15 +9,11 @@ import { Feedback } from './feedback';
 })
 export class FeedbackComponent implements OnInit {
 
-  feedback: Feedback;
-  feedback_text: string;
-  is_mozoon: boolean;
+  feedback: Feedback = new Feedback();
 
-  constructor(private verifierService: VerifierService) {
-    this.verifierService.receivedFilter.subscribe((param: Feedback) => {
+  constructor(private feedbackService: FeedbackService) {
+    this.feedbackService.receivedFilter.subscribe((param: Feedback) => {
       this.feedback = param;
-      this.feedback_text = param.بحر;
-      this.is_mozoon = param.موزون;
     });
   }
 
